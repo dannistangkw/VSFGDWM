@@ -125,7 +125,8 @@ else:
 
 ##########dataframe##############################################
 df = pd.DataFrame(columns=Col, data=Result_list)
-df.to_csv(f'files/Stablecoin_Yield_Overview_{Today_date}')
+file_name = f'Stablecoin_Yield_Overview_{Today_date}.csv'
+df.to_csv(f'files/{file_name}')
 
 
 
