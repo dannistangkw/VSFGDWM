@@ -99,8 +99,6 @@ def get_api_data():
     # method=GET&path=/api/v2/asset/statement?page=1&size=3&createStartTime=2022-03-06T03%3A00%3A00.000Z&timestamp=1646816265520
 
     signature = hmac.new(bytes(WhaleFin_SECRET_KEY, 'utf-8'), bytes(signStr, 'utf-8'), hashlib.sha256).hexdigest()
-    # 3b6da1674b0667556f99c28b675e0b2e881e7792f28cbdbfe9babd9aba32f02a
-
 
 
     headers = {
@@ -108,7 +106,6 @@ def get_api_data():
         'access-timestamp': str(timestamp),
         'access-sign': signature
     }
-    # {'access-key': 'ACCESS_KEY', 'access-timestamp': '1646816265520', 'access-sign': '3b6da1674b0667556f99c28b675e0b2e881e7792f28cbdbfe9babd9aba32f02a'}
 
     resp = requests.get(WhaleFin_BASE_URL + path, headers=headers)
 
@@ -130,18 +127,19 @@ def get_api_data():
 
 
 
+###########run#####################################################
+def run():
+    ##########dataframe##############################################
+    Result_list = get_api_data()
+    df = pd.DataFrame(columns=Col, data=Result_list)
+    file_name = f'Stablecoin_Yield_Overview_{Today_date}.csv'
+    df.to_csv(f'files/{file_name}')
 
-##########dataframe##############################################
-Result_list = get_api_data()
-df = pd.DataFrame(columns=Col, data=Result_list)
-file_name = f'Stablecoin_Yield_Overview_{Today_date}.csv'
-df.to_csv(f'files/{file_name}')
 
+    ###########telegram
+    token = config.telegram_token
+    receiverID = config.receiver_token
 
-###########telegram
-token = config.telegram_token
-receiverID = config.receiver_token
-
-bot = telepot.Bot(token)
-bot.sendMessage(receiverID, f'{df}')
-bot.sendDocument(receiverID, document=open(f'files/{file_name}'))
+    bot = telepot.Bot(token)
+    bot.sendMessage(receiverID, f'{df}')
+    bot.sendDocument(receiverID, document=open(f'files/{file_name}'))
