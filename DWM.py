@@ -113,7 +113,7 @@ if resp.status_code == 200:
     Whale_r = resp.json()['result']['items']
     for Whale_data in Whale_r:
         # print(Whale_data)
-        Whale_result = ['WhaleFin', 'USDⓈ']
+        Whale_result = ['WhaleFin', 'USDS']
         Whale_result.append(Whale_data['tenor'])
         Whale_result.append("{:.2%}".format(float(Whale_data['originalApr'])))
         Whale_result.append(int(float(Whale_data['minSubscribeAmount'])))
@@ -131,9 +131,9 @@ df.to_csv(f'files/{file_name}')
 
 
 ###########telegram
-# token = config.telegram_token
-# receiverID = config.receiver_token
-#
-# bot = telepot.Bot(token)
-# bot.sendMessage(receiverID, f'AAPL')
-# bot.sendDocument(receiverID, document=open('files/AAPL.csv'))
+token = config.telegram_token
+receiverID = config.receiver_token
+
+bot = telepot.Bot(token)
+bot.sendMessage(receiverID, f'{df}')
+bot.sendDocument(receiverID, document=open(f'files/{file_name}'))
