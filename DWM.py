@@ -14,8 +14,8 @@ import pandas as pd
 #########Keys & URL########################################
 Binance_API_KEY = config.Binance_keyPrivate
 Binance_SECRET_KEY = config.Binance_keySecret
-WhaleFin_API_Key = str(config.Whale_keyPrivate)
-WhaleFin_SECRET_KEY = str(config.Whale_keySecret)
+WhaleFin_API_Key = config.Whale_keyPrivate
+WhaleFin_SECRET_KEY = config.Whale_keySecret
 Binance_BASE_URL = 'https://api.binance.com'
 Binance_PATH = '/sapi/v1/lending/project/list'
 WhaleFin_BASE_URL = 'https://be.whalefin.com'
@@ -74,7 +74,7 @@ def get_api_data():
                 Binance_result.append(Binance_data['duration'])
                 Binance_result.append("{:.2%}".format(float(Binance_data['interestRate'])))
                 Binance_result.append(int(Binance_data['lotSize']))
-                Binance_result.append(int(Binance_data['lotsUpLimit'])*int(Binance_data['lotSize']))
+                Binance_result.append(f"{int(Binance_data['lotsUpLimit'])*int(Binance_data['lotSize'])/1000000}M")
                 Result_list.append(Binance_result)
     else:
         raise BinanceException(status_code=Binance_r.status_code, data=Binance_r.json())
@@ -117,7 +117,9 @@ def get_api_data():
             Whale_result.append(Whale_data['tenor'])
             Whale_result.append("{:.2%}".format(float(Whale_data['originalApr'])))
             Whale_result.append(int(float(Whale_data['minSubscribeAmount'])))
-            Whale_result.append(Whale_data['maxIndividualSubscribeAmount'])
+            if Whale_data['maxIndividualSubscribeAmount'] is not None:
+                Whale_result.append(f"{int(Whale_data['maxIndividualSubscribeAmount'])/1000000}M")
+            else: Whale_data['maxIndividualSubscribeAmount']
 
             Result_list.append(Whale_result)
     else:
