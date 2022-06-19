@@ -19,6 +19,7 @@ Binance_BASE_URL = 'https://api.binance.com'
 Binance_PATH = '/sapi/v1/lending/project/list'
 WhaleFin_BASE_URL = 'https://be.whalefin.com'
 WhaleFin_PATH = '/api/v2/earn/products'
+Gemini_PATH = 'https://api.gemini.com/v1/earn/rates'
 timestamp = int(time.time() * 1000)
 Col = ['Platform', 'Currency', 'Tenor', 'APR', 'Min_Subscribe', 'Max_Subscribe']
 
@@ -85,7 +86,6 @@ def get_api_data():
 
     method = 'GET'
     timestamp = int(time.time() * 1000)
-
     params = urllib.parse.urlencode(
         {
             "type": 'FIXED',
@@ -112,7 +112,7 @@ def get_api_data():
         Whale_r = resp.json()['result']['items']
         for Whale_data in Whale_r:
             # print(Whale_data)
-            Whale_result = ['WhaleFin', 'USDS']
+            Whale_result = ['WhaleFin', 'USDC']
             Whale_result.append(Whale_data['tenor'])
             Whale_result.append("{:.2%}".format(float(Whale_data['originalApr'])))
             Whale_result.append(int(float(Whale_data['minSubscribeAmount'])))
@@ -124,6 +124,31 @@ def get_api_data():
             Result_list.append(Whale_result)
     else:
         print(f'{resp.status_code}, WhaleFin API Call Failed')
+    ####Gemini###########################################################################
+
+    Gem_result = []
+    gemini_resp = requests.get(Gemini_PATH)
+    Gem_data = pd.read_json(Gemini_PATH)
+    Gem_df = pd.DataFrame(Gem_data)
+    index_list = list(Gem_df.index.values)
+    Gem_stablecoin_list = [i for i in index_list if 'USD' in i]
+    if len(Gem_stablecoin_list) > 0:
+        for coin in Gem_stablecoin_list:
+            Gem_earn_product_detail = gemini_resp.json()["5fecd3fd-b705-4242-8880-00be626642b4"][coin]
+            gem_subresult = ['Gemini',
+                             coin,
+                             0,
+                             "{:.2%}".format(float(Gem_earn_product_detail['apyPct']) / 100),
+                             1,
+                             str(Gem_earn_product_detail['depositUsdLimit'] / 1000000) + "M"
+                             ]
+
+            Gem_result.append(gem_subresult)
+
+    else:
+        print(f'{gemini_resp.status_code}, Gemini API Call Failed')
+
+    Result_list += Gem_result
 
     return Result_list
 
@@ -133,13 +158,54 @@ def run():
     ##########dataframe##############################################
     Result_list = get_api_data()
     df = pd.DataFrame(columns=Col, data=Result_list)
-    file_name = f'Stablecoin_Yield_Overview_{Today_date}.csv'
-    df.to_csv(f'files/{file_name}', index=False)
 
-    ###########telegram
+
+    #####data formating#######################################################################
+    New_output = []
+    ##product name#########################################
+
+    tenor_list = list(filter(None, set(df['Tenor'].tolist())))
+    tenor_list.sort()
+    platform_list = list(filter(None, set(df['Platform'].tolist())))
+    currency_list = list(filter(None, set(df['Currency'].tolist())))
+
+    ##find product details
+    if len(platform_list) > 0:
+        new_col = ['Product', 'Tenor']
+        new_col = new_col + platform_list
+
+        for product in currency_list:
+            for tenor in tenor_list:
+                new_result = [product, int(tenor)]
+                empty_result = 0
+
+                for exchange in platform_list:
+                    select_data = df.loc[
+                        (df['Platform'] == exchange) &
+                        (df['Tenor'] == tenor) &
+                        (df['Currency'] == product)
+                        ]
+                    try:
+                        # new_result.append(select_data['APR'][0])
+                        new_result.append(select_data['APR'].item())
+
+                    except:
+                        new_result.append(None)
+                        empty_result += 1
+                if empty_result < 2:
+                    New_output.append(new_result)
+
+    else:
+        print(f'No platform found from APIs')
+
+    new_df = pd.DataFrame(columns=new_col, data=New_output).sort_values(by=['Tenor'])
+    file_name = f'Stablecoin_Yield_Overview_{Today_date}.csv'
+    new_df.to_csv(f'files/{file_name}', index=False)
+
+    ##########telegram
     token = config.telegram_token
     receiverID = config.receiver_token
 
     bot = telepot.Bot(token)
-    bot.sendMessage(receiverID, f'{df}')
+    bot.sendMessage(receiverID, f'{new_df}')
     bot.sendDocument(receiverID, document=open(f'files/{file_name}'))
