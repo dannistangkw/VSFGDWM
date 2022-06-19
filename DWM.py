@@ -79,8 +79,8 @@ def get_api_data():
     else:
         raise BinanceException(status_code=Binance_r.status_code, data=Binance_r.json())
 
-    space = [''] * len_reslut_list
-    Result_list.append(space)
+    # space = [''] * len_reslut_list
+    # Result_list.append(space)
 
     #############WhaleFin###########################################################################################################################################################################################################
 
@@ -137,7 +137,7 @@ def get_api_data():
             Gem_earn_product_detail = gemini_resp.json()["5fecd3fd-b705-4242-8880-00be626642b4"][coin]
             gem_subresult = ['Gemini',
                              coin,
-                             0,
+                             1,
                              "{:.2%}".format(float(Gem_earn_product_detail['apyPct']) / 100),
                              1,
                              str(Gem_earn_product_detail['depositUsdLimit'] / 1000000) + "M"
@@ -192,7 +192,7 @@ def run():
                     except:
                         new_result.append(None)
                         empty_result += 1
-                if empty_result < 2:
+                if empty_result < len(platform_list):
                     New_output.append(new_result)
 
     else:
